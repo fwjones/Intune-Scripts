@@ -12,14 +12,22 @@
 	Use as base for any install with WinGet. Simply specify the PackageID and log variables. 
 .PARAMETER PackageID
 Specify the WinGet ID. Use WinGet Search "SoftwareName" to locate the PackageID
+.PARAMETER AdditionalInstallArgs
+Specify Additional Installation Arguments to pass to WinGet https://learn.microsoft.com/en-us/windows/package-manager/winget/install
     .EXAMPLE
-powershell.exe -exectuionpolicy bypass -file Winget-InstallPackage.ps1 -PackageID "Google.Chrome" -Log "ChromeWingetInstall.log"
+powershell.exe -executionpolicy bypass -file Winget-InstallPackage.ps1 -PackageID "Google.Chrome" -Log "ChromeWingetInstall.log"
 	.EXAMPLE
 powershell.exe -executionpolicy bypass -file Winget-InstallPackage.ps1 -PackageID "Notepad++.Notepad++" -Log "NotepadPlusPlus.log"
+	.EXAMPLE
+powershell.exe -executionpolicy bypass -file Winget-InstallPackage.ps1 -PackageID "Python.Python.3.11" -Log "Python3Install.log" -AdditionalInstallArgs "--architecture x64"
+	.EXAMPLE
+powershell.exe -executionpolicy bypass -file Winget-InstallPackage.ps1 -PackageName "Microsoft .NET Runtime 6.0" -Log "DotNetRuntime6.log"
 #>
 param (
 	$PackageID,
-	$Log
+	$PackageName = "Microsoft .NET Runtime 6.0",
+	$AdditionalInstallArgs,
+	$Log = "Dotnet6.log"
 )
 
 # Re-launch as 64bit process (source: https://z-nerd.com/blog/2020/03/31-intune-win32-apps-powershell-script-installer/)
@@ -197,9 +205,16 @@ function WingetTempDownload # Download WinGet from blob storage if unable to ins
 function WingetRun {
 param (
 	$PackageID,
-	$RunType
+	$PackageName,
+	$RunType,
+	$AdditionalArgs
 )
-	& $Winget $RunType --id $PackageID --source Winget --silent --accept-package-agreements --accept-source-agreements 
+	if ($PackageID){
+	& $Winget $RunType --id $PackageID --source Winget --silent $AdditionalArgs --accept-package-agreements --accept-source-agreements 
+	}
+	elseif ($PackageName){
+	& $Winget $RunType "$PackageName" --source Winget --silent $AdditionalArgs --accept-package-agreements --accept-source-agreements 	
+	}
 }
 
 function Install-VisualC {
@@ -279,7 +294,12 @@ if (!$Winget)
 		try
 		{
 			Write-Log -message "Winget varibale $($winget)"
-            $Install = WingetRun -RunType install -PackageID $PackageID
+            if ($PackageID){
+			$Install = WingetRun -RunType install -PackageID $PackageID -AdditionalArgs $AdditionalInstallArgs	
+			}
+			elseif ($PackageName){
+			$Install = WingetRun -RunType install -PackageName $PackageName -AdditionalArgs $AdditionalInstallArgs		
+			}
 			Write-Log $Install
 		}
 		Catch
@@ -298,7 +318,12 @@ if (!$Winget)
 			WingetTempDownload
 			try
 			{
-				$Install = WingetRun -RunType install -PackageID $PackageID
+				if ($PackageID){
+				$Install = WingetRun -RunType install -PackageID $PackageID -AdditionalArgs $AdditionalInstallArgs	
+				}
+				elseif ($PackageName){
+				$Install = WingetRun -RunType install -PackageName $PackageName -AdditionalArgs $AdditionalInstallArgs	
+				}
 				Write-Log $Install
 			}
 			Catch
@@ -320,8 +345,21 @@ if (!$Winget)
 }
 else
 {
+	if ((Get-ItemProperty $Winget).VersionInfo.FileVersion -lt 1.21){
+		Write-Log -message "Attempting to update Winget as System under $($loggedOnUser)"
+		InstallWingetAsSystem
+		if (-Not $Winget){
+			Write-Lot -message "Failed to upgrade Winget"
+			exit 0
+		}
+	}
 	Write-Log "Winget found at $($Winget)"
-	$Install = WingetRun -RunType install -PackageID $PackageID
+	if ($PackageID){
+	$Install = WingetRun -RunType install -PackageID $PackageID -AdditionalArgs $AdditionalInstallArgs	
+	}
+	elseif ($PackageName){
+	$Install = WingetRun -RunType install -PackageName $PackageName -AdditionalArgs $AdditionalInstallArgs	
+	}
 	Write-Log $Install
 }
 #endregion
