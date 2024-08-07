@@ -162,7 +162,7 @@ install-winget
 	Start-Sleep -Seconds 120
 	Unregister-ScheduledTask -TaskName RunScript -Confirm:$false
 	Remove-Item C:\automation\script.ps1
-    $Global:Winget = gci "$env:programfiles\WindowsApps" -Recurse -File | where { $_.name -like "AppInstallerCLI.exe" -or $_.name -like "Winget.exe" } | select -ExpandProperty fullname
+    $Global:Winget = Get-ChildItem "$env:programfiles\WindowsApps" -Recurse -File | where { $_.name -like "AppInstallerCLI.exe" -or $_.name -like "Winget.exe" } | Select-Object -ExpandProperty fullname
 
 }
 
@@ -237,11 +237,11 @@ function Get-RegUninstallKey
 	
 	foreach ($key in $uninstallKeys)
 	{
-		$softwareTable += Get-Childitem $key | Get-ItemProperty | where displayname | Sort-Object -Property displayname
+		$softwareTable += Get-Childitem $key | Get-ItemProperty | Where-Object displayname | Sort-Object -Property displayname
 	}
 	if ($DisplayName)
 	{
-		$softwareTable | where displayname -Like "*$DisplayName*"
+		$softwareTable | Where-Object displayname -Like "*$DisplayName*"
 	}
 	else
 	{
@@ -257,7 +257,7 @@ function Get-RegUninstallKey
 $VisualC = Get-RegUninstallKey -DisplayName "Microsoft Visual C++ 2015-2022 Redistributable (x64)"
 $loggedOnUser = (gcim win32_computersystem).username
 # Get path for Winget executible
-$Winget = gci "$env:ProgramFiles\WindowsApps" -Recurse -File | where { $_.name -like "AppInstallerCLI.exe" -or $_.name -like "Winget.exe" } | select -ExpandProperty fullname
+$Winget = Get-ChildItem "$env:ProgramFiles\WindowsApps" -Recurse -File | Where-Object { $_.name -like "AppInstallerCLI.exe" -or $_.name -like "Winget.exe" } | Select-Object -ExpandProperty fullname
 # If there are multiple versions, select latest
 if ($Winget.count -gt 1) { $Winget = $Winget[-1] }
 # If Visual C++ Redist. not installed, install it
