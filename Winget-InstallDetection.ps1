@@ -15,7 +15,7 @@ $SoftwareName = 'Chrome' # Search for an uninstall key with Displayname 'Chrome'
 #>
 # Edit the software displayname below
 
-$SoftwareName = 'Company Portal'
+$SoftwareName = 'Chrome'
 
 function Get-RegUninstallKey
 {
